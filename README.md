@@ -88,7 +88,43 @@ camera.release()
 cv2.destroyAllWindows()
 ```
 Run this block to launch a real-time object detection window!
+from IPython.display import display, Javascript, Image
+from google.colab import output
+import base64, numpy as np, cv2
 
+# Create a placeholder that gets updated in place
+display_handle = display(None, display_id=True)
+
+def process_frame(img_data):
+    img_bytes  = base64.b64decode(img_data.split(',')[1])
+    img_array  = np.frombuffer(img_bytes, dtype=np.uint8)
+    frame      = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+    result     = model(frame, verbose=False)
+    plot_frame = result[0].plot()
+    _, buffer  = cv2.imencode('.jpg', plot_frame)
+    display_handle.update(Image(data=buffer.tobytes()))  # updates live
+
+output.register_callback('notebook.process_frame', process_frame)
+
+display(Javascript('''
+    async function startVideo() {
+        const video = document.createElement('video');
+        video.style.display = 'none';
+        document.body.appendChild(video);
+        const stream = await navigator.mediaDevices.getUserMedia({video: true});
+        video.srcObject = stream;
+        await video.play();
+        setInterval(() => {
+            const canvas = document.createElement('canvas');
+            canvas.width  = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            const imgData = canvas.toDataURL('image/jpeg', 0.5);
+            google.colab.kernel.invokeFunction('notebook.process_frame', [imgData], {});
+        }, 200);
+    }
+    startVideo();
+'''))
 ---
 
 ## ⚡ Model Options
