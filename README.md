@@ -1,6 +1,3 @@
-# CodeAlpha_Object_Detection_and_Tracking
-Object detection model using Yolov8
-
 # 🔍 Object Detection Model using YOLOv8
 
 A lightweight, high-performance object detection project implementing Ultralytics YOLOv8. This project demonstrates image inference, real-time bounding box plotting, and custom webcam integration logic designed to run in both local Python environments and Google Colab notebooks.
@@ -22,7 +19,7 @@ The primary objective of this project is to implement real-time object detection
 
 ```
 Object detection model yolov8/
-├── YOLOv8 (1).ipynb   # Jupyter Notebook containing setup, inference, and visualization
+├── YOLOv8.ipynb       # Main Jupyter Notebook containing setup, inference, and Colab webcam utility
 ├── yolov8n.pt         # Pre-trained YOLOv8 Nano weights (6.2MB)
 ├── yolo11n.pt         # Pre-trained YOLOv11 Nano weights (5.4MB)
 ├── cat_dog.jpg        # Sample testing image 1
@@ -46,15 +43,15 @@ Object detection model yolov8/
 4. **Result Rendering**:
    - `result[0].plot()` extracts the original image overlayed with detected labels, colors, and bounding boxes.
    - Saves or displays the rendered image using OpenCV (`cv2.imwrite()`) or IPython display.
-5. **Live Webcam Tracking** (Commented block for local deployment):
-   - Opens local webcam stream `cv2.VideoCapture(0)`.
-   - Loops frame-by-frame, applying the YOLO detector to draw target boxes dynamically in a pop-up window until the user presses `q` to quit.
+5. **Google Colab Webcam Tracking**:
+   - Executes custom JavaScript snippets using IPython HTML elements to request client webcam access.
+   - Captures frames from the browser, decodes base64-encoded strings, runs YOLOv8 model inference, and renders dynamic detection frames.
 
 ---
 
 ## 🚀 Getting Started
 
-Follow these steps to run the object detector locally on your machine.
+Follow these steps to run the object detector locally on your machine or upload it directly to Google Colab.
 
 ### 1. Installation
 Install the necessary package dependencies via pip:
@@ -63,7 +60,7 @@ pip install ultralytics opencv-python pillow matplotlib
 ```
 
 ### 2. Running Inference on Sample Images
-1. Open the Jupyter Notebook: **`YOLOv8 (1).ipynb`**.
+1. Open the Jupyter Notebook: **`YOLOv8.ipynb`**.
 2. Run the cells to download the `yolov8n.pt` weights (if not already downloaded).
 3. Specify your target image file (e.g., `cat_dog2.jpg`) in the prediction cell:
    ```python
@@ -71,60 +68,11 @@ pip install ultralytics opencv-python pillow matplotlib
    result[0].show()
    ```
 
-### 3. Running with a Local Webcam
-Uncomment the local camera OpenCV block in the notebook:
-```python
-camera = cv2.VideoCapture(0)
-while True:
-    ret, frame = camera.read()
-    if not ret:
-        break
-    results = model(frame, verbose=False)
-    plot_frame = results[0].plot()
-    cv2.imshow("YOLOv8 Real-Time Detection", plot_frame)
-    if cv2.waitKey(1) & 0xFF == ord("q"):
-        break
-camera.release()
-cv2.destroyAllWindows()
-```
-Run this block to launch a real-time object detection window!
-from IPython.display import display, Javascript, Image
-from google.colab import output
-import base64, numpy as np, cv2
+### 3. Google Colab Browser Webcam Integration
+When running in Colab, the notebook contains utility scripts to feed webcam data into the Python runtime.
+1. Run the cells containing the Javascript camera interface definition.
+2. Execute the camera trigger cell; this will request browser camera permissions and grab real-time frames for YOLOv8 inference.
 
-# Create a placeholder that gets updated in place
-display_handle = display(None, display_id=True)
-
-def process_frame(img_data):
-    img_bytes  = base64.b64decode(img_data.split(',')[1])
-    img_array  = np.frombuffer(img_bytes, dtype=np.uint8)
-    frame      = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
-    result     = model(frame, verbose=False)
-    plot_frame = result[0].plot()
-    _, buffer  = cv2.imencode('.jpg', plot_frame)
-    display_handle.update(Image(data=buffer.tobytes()))  # updates live
-
-output.register_callback('notebook.process_frame', process_frame)
-
-display(Javascript('''
-    async function startVideo() {
-        const video = document.createElement('video');
-        video.style.display = 'none';
-        document.body.appendChild(video);
-        const stream = await navigator.mediaDevices.getUserMedia({video: true});
-        video.srcObject = stream;
-        await video.play();
-        setInterval(() => {
-            const canvas = document.createElement('canvas');
-            canvas.width  = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0);
-            const imgData = canvas.toDataURL('image/jpeg', 0.5);
-            google.colab.kernel.invokeFunction('notebook.process_frame', [imgData], {});
-        }, 200);
-    }
-    startVideo();
-'''))
 ---
 
 ## ⚡ Model Options
@@ -135,4 +83,3 @@ This folder contains multiple pre-trained weights for comparison:
 ---
 
 **Made with ❤️ for AI Project - 4th Semester**
-
